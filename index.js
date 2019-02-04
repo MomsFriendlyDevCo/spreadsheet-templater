@@ -8,7 +8,12 @@ function SpreadsheetTemplater(options) {
 	this.settings = {
 		re: {
 			expression: /{{(.+?)}}/g,
+			repeatStart: /{{#?\s*each\s+(.+?)}}/g,
+			repeatEnd: /{{\/each.*?}}/,
+			extractCol: /^([A-Z]+)/,
+			extractRow: /([0-9]+)$/,
 		},
+		repeaterSilentOnError: false,
 		template: {
 			path: undefined,
 		},
@@ -66,17 +71,86 @@ function SpreadsheetTemplater(options) {
 		if (data) this.set('data', data);
 
 		if (!this.workbook) throw 'No workbook loaded, use readTemplate() first';
+
+		var repeaters = []; // Repeater replacements we need to make - must be made in reverse order due to the fact we are splicing into an array
+
 		_.forEach(this.workbook.Sheets, (sheet, sheetKey) => {
 			_.forEach(sheet, (cell, cellKey) => {
-				if (cellKey.startsWith('!')) return; // Ignore meta-cells
+				if (cellKey.startsWith('!') || cell.ignore) return; // Ignore meta-cells or cells we have processed elsewhere
 
-				// Simple expressions - e.g. `{{foo.bar.baz}}`
+				// Repeaters {{{
+				var repeatMatch;
+				if (repeatMatch = this.settings.re.repeatStart.exec(cell.v)) {
+					// Read horizontally until we hit the repeaterEnd
+					var repeater = {
+						sheet,
+						dataSource: repeatMatch[1],
+						start: xlsx.utils.decode_cell(cellKey),
+					};
+
+					repeater.items = _.chain(sheet)
+						.pickBy((cell, cellKey) => {
+							var cellPos = xlsx.utils.decode_cell(cellKey);
+							if (cellPos.r != repeater.start.r) return false; // Not on the same row
+							if (cellPos.c < repeater.start.c) return false; // Occurs before the starting cell
+							return true;
+						})
+						.forEach((cell, cellKey) => cell.ignore = true)
+						.map((cell, cellKey) => ({
+							position: xlsx.utils.decode_cell(cellKey),
+							...cell,
+						}))
+						.sortBy('position.c')
+						.reduce((t, cell) => { // Stop reading horizontally when we hit the ending tag
+							if (t.ended) {
+								// Do nothing
+							} else if (this.settings.re.repeatEnd.test(cell.v)) {
+								t.cells.push(cell); // Append this last cell to the iterables
+								t.ended = true; // ... and also end reading
+							} else {
+								t.cells.push(cell); // Append this cell to the items we iterate over
+							}
+							return t;
+						}, {ended: false, cells: []})
+						.get('cells')
+						.value();
+
+					repeaters.unshift(repeater);
+
+					return; // Don't process this cell any further
+				}
+				// }}}
+
+				// Simple expressions - e.g. `{{foo.bar.baz}}` {{{
 				cell.v = cell.v.replace(this.settings.re.expression, (match, expression) => {
 					cell.w = undefined;
 					return _.get(this.settings.data, expression);
 				});
+				// }}}
 			});
 		});
+
+		if (repeaters.length) {
+			repeaters.forEach(repeater => {
+				var data = _.get(this.settings.data, repeater.dataSource);
+				if (!_.isArray(data)) {
+					if (this.settings.repeaterSilentOnError) {
+						data = [];
+					} else {
+						throw `Cannot use data source "${repeater.dataSource}" as a repeater as it is not an array`;
+					}
+				}
+
+				data = data.map(dataItem => repeater.items.map(item =>
+					item.v
+						.replace(this.settings.re.repeatStart, '')
+						.replace(this.settings.re.repeatEnd, '')
+						.replace(this.settings.re.expression, (match, expression) => _.get(dataItem, expression))
+				));
+
+				xlsx.utils.sheet_add_aoa(repeater.sheet, data, {origin: repeater.start});
+			});
+		}
 
 		return this;
 	};

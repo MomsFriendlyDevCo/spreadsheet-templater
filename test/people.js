@@ -25,16 +25,16 @@ describe('Template a speadsheet using people data', ()=> {
 		]);
 	});
 
-	it.skip('apply the template for multiple users', ()=> { // NOT YET SUPPORTED
+	it('apply the template for multiple users', ()=> { // NOT YET SUPPORTED
 		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
 			.json()
 
-		expect(result.People).to.be.deep.equal(_.flatten([
+		expect(result.People).to.be.deep.equal([
 			['Name', 'Email', 'Phone', 'Address'],
-			data.map(p => [p.name, p.email, p.phone, `${p.address.street}, ${p.address.city}, ${p.address.zipcode}`]),
-		]));
+			...data.map(p => [p.name, p.email, p.phone, `${p.address.street}, ${p.address.city}, ${p.address.zipcode}`]),
+		]);
 	});
 
 });
