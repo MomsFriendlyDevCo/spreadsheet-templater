@@ -41,6 +41,8 @@ Name,Email,Phone,Address
 
 The spreadsheet would be populated with all items in the `people` collection until exhausted.
 
+If no specific data path is specified for each (i.e. `{{#each}}`) the main data object is assumed to be an array and it is used instead.
+
 
 API
 ===

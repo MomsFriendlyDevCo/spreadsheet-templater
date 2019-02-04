@@ -8,7 +8,7 @@ function SpreadsheetTemplater(options) {
 	this.settings = {
 		re: {
 			expression: /{{(.+?)}}/g,
-			repeatStart: /{{#?\s*each\s+(.+?)}}/g,
+			repeatStart: /{{#?\s*each\s*(.*?)}}/g,
 			repeatEnd: /{{\/each.*?}}/,
 		},
 		repeaterSilentOnError: false,
@@ -132,12 +132,15 @@ function SpreadsheetTemplater(options) {
 
 		if (repeaters.length) {
 			repeaters.forEach(repeater => {
-				var data = _.get(this.settings.data, repeater.dataSource);
+				var data =
+					repeater.dataSource ? _.get(this.settings.data, repeater.dataSource) // Use a dotted path as the source
+					: this.settings.data // Probably in format `{{#each}}` (use global object)
+
 				if (!_.isArray(data)) {
 					if (this.settings.repeaterSilentOnError) {
 						data = [];
 					} else {
-						throw `Cannot use data source "${repeater.dataSource}" as a repeater as it is not an array`;
+						throw `Cannot use data source "${repeater.dataSource || 'ROOT'}" as a repeater as it is not an array`;
 					}
 				}
 
