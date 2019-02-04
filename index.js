@@ -10,8 +10,6 @@ function SpreadsheetTemplater(options) {
 			expression: /{{(.+?)}}/g,
 			repeatStart: /{{#?\s*each\s+(.+?)}}/g,
 			repeatEnd: /{{\/each.*?}}/,
-			extractCol: /^([A-Z]+)/,
-			extractRow: /([0-9]+)$/,
 		},
 		repeaterSilentOnError: false,
 		template: {

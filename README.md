@@ -48,13 +48,16 @@ The module exposes a single object.
 
 This module supports the following options:
 
-| Option          | Type   | Default       | Description                                              |
-|-----------------|--------|---------------|----------------------------------------------------------|
-| `re`            | Object |               | The regular expressions used when detecting markup       |
-| `re.expression` | RegExp | `/{{(.+?)}}/` | RegExp to detect a single expression replacement         |
-| `template`      | Object |               | Options to control templates                             |
-| `template.path` | String |               | The source file to process the template from             |
-| `data`          | Object | `{}`          | The data object used when marking up the template output |
+| Option                  | Type     | Default                    | Description                                                                     |
+|-------------------------|----------|----------------------------|---------------------------------------------------------------------------------|
+| `re`                    | Object   |                            | The regular expressions used when detecting markup                              |
+| `re.expression`         | RegExp   | `/{{(.+?)}}/`              | RegExp to detect a single expression replacement                                |
+| `re.repeatStart`        | RegExp   | `/{{#?\s*each\s+(.+?)}}/g` | How to identify the start of a repeater                                         |
+| `re.repeatEnd`          | RegExp   | `/{{\/each.*?}}/`          | How to identify the end of a repeater                                           |
+| `repeaterSilentOnError` | Boolean  | `false`                    | Whether the module should throw when a non-array path is provided to a repeater |
+| `template`              | Object   |                            | Options to control templates                                                    |
+| `template.path`         | String   |                            | The source file to process the template from                                    |
+| `data`                  | Object   | `{}`                       | The data object used when marking up the template output                        |
 
 
 Constructor(options | filename)
