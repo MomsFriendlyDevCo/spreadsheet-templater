@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var expect = require('chai').expect;
 var faker = require('faker');
 var SpreadsheetHandlebars = require('..');
@@ -9,7 +10,7 @@ describe('Template a speadsheet using people data', ()=> {
 		data = Array.from(new Array(10), ()=> faker.helpers.userCard());
 	});
 
-	it('apply the template using the data set', ()=> {
+	it('apply the template for a single user', ()=> {
 		var result = new SpreadsheetHandlebars(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
@@ -22,6 +23,18 @@ describe('Template a speadsheet using people data', ()=> {
 			['Address', `${data[0].address.street}, ${data[0].address.city}, ${data[0].address.zipcode}`],
 			['Phone', data[0].phone],
 		]);
+	});
+
+	it.skip('apply the template for multiple users', ()=> { // NOT YET SUPPORTED
+		var result = new SpreadsheetHandlebars(`${__dirname}/data/people.xlsx`)
+			.data({people: data})
+			.apply()
+			.json()
+
+		expect(result.People).to.be.deep.equal(_.flatten([
+			['Name', 'Email', 'Phone', 'Address'],
+			data.map(p => [p.name, p.email, p.phone, `${p.address.street}, ${p.address.city}, ${p.address.zipcode}`]),
+		]));
 	});
 
 });
