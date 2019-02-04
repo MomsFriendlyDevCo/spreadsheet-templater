@@ -1,7 +1,7 @@
 var _ = require('lodash');
 var expect = require('chai').expect;
 var faker = require('faker');
-var SpreadsheetHandlebars = require('..');
+var SpreadsheetTemplater = require('..');
 
 describe('Template a speadsheet using people data', ()=> {
 
@@ -11,7 +11,7 @@ describe('Template a speadsheet using people data', ()=> {
 	});
 
 	it('apply the template for a single user', ()=> {
-		var result = new SpreadsheetHandlebars(`${__dirname}/data/people.xlsx`)
+		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
 			.json()
@@ -26,7 +26,7 @@ describe('Template a speadsheet using people data', ()=> {
 	});
 
 	it.skip('apply the template for multiple users', ()=> { // NOT YET SUPPORTED
-		var result = new SpreadsheetHandlebars(`${__dirname}/data/people.xlsx`)
+		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
 			.json()

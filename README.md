@@ -1,14 +1,14 @@
-Spreadsheet-Handlebars
-======================
-[Handlebars](http://handlebarsjs.com) integration for spreadhssets (via [XLSX](https://docs.sheetjs.com)).
+Spreadsheet-Templater
+=====================
+Simple templates markup for spreadsheets (via [XLSX](https://docs.sheetjs.com)).
 
-This plugin allows a spreadsheet to use handlebars notation to replace cell contents which enables an input spreadsheet to act as a template for incomming data.
+This plugin allows a spreadsheet to use handlebars-like notation to replace cell contents which enables an input spreadsheet to act as a template for incomming data.
 
 
 ```javascript
-var SpreadsheetHandlebars = require('@momsfriendlydevco/spreadsheet-handlebars');
+var SpreadsheetTemplater = require('@momsfriendlydevco/spreadsheet-templaters');
 
-new SpreadsheetHandlebars('input.xlsx')
+new SpreadsheetTemplater('input.xlsx')
 	.data({...})
 	.apply()
 	.write('output.xlsx')
@@ -18,6 +18,16 @@ new SpreadsheetHandlebars('input.xlsx')
 API
 ===
 The module exposes a single object.
+
+This module supports the following options:
+
+| Option          | Type   | Default       | Description                                              |
+|-----------------|--------|---------------|----------------------------------------------------------|
+| `re`            | Object |               | The regular expressions used when detecting markup       |
+| `re.expression` | RegExp | `/{{(.+?)}}/` | RegExp to detect a single expression replacement         |
+| `template`      | Object |               | Options to control templates                             |
+| `template.path` | String |               | The source file to process the template from             |
+| `data`          | Object | `{}`          | The data object used when marking up the template output |
 
 
 Constructor(options | filename)

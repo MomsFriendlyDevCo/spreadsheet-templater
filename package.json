@@ -1,7 +1,7 @@
 {
-  "name": "@momsfriendlydevco/spreadsheet-handlebars",
+  "name": "@momsfriendlydevco/spreadsheet-templater",
   "version": "0.0.0",
-  "description": "Handlebars based templates for spreadsheets",
+  "description": "Simple templates markup for spreadsheets",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -11,11 +11,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MomsFriendlyDevCo/spreadsheet-handlebars.git"
+    "url": "git+https://github.com/MomsFriendlyDevCo/spreadsheet-templater.git"
   },
   "keywords": [
     "spreadsheet",
-    "handlebars",
     "template",
     "templaer",
     "data",
@@ -24,9 +23,9 @@
   "author": "Matt Carter <m@ttcarter.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MomsFriendlyDevCo/spreadsheet-handlebars/issues"
+    "url": "https://github.com/MomsFriendlyDevCo/spreadsheet-templater/issues"
   },
-  "homepage": "https://github.com/MomsFriendlyDevCo/spreadsheet-handlebars#readme",
+  "homepage": "https://github.com/MomsFriendlyDevCo/spreadsheet-templater#readme",
   "devDependencies": {
     "chai": "^4.2.0",
     "faker": "^4.1.0",

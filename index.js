@@ -3,7 +3,7 @@ var events = require('events');
 var util = require('util');
 var xlsx = require('xlsx');
 
-function SpreadsheetHandlebars(options) {
+function SpreadsheetTemplater(options) {
 	// Options {{{
 	this.settings = {
 		re: {
@@ -19,7 +19,7 @@ function SpreadsheetHandlebars(options) {
 	* Set a single, or multiple options
 	* @param {Object|string} key Either an options object to merge or a single key path (dotted / array notation supported) to set
 	* @param {*} [val] If key is a string this specifies the value to set
-	* @returns {SpreadsheetHandlebars} This chainable object
+	* @returns {SpreadsheetHTemplater} This chainable object
 	*/
 	this.set = function(key, val) {
 		if (_.isObject(key)) {
@@ -33,7 +33,7 @@ function SpreadsheetHandlebars(options) {
 	/**
 	* Convenience function to set data
 	* @param {Object} data The data to set
-	* @returns {SpreadsheetHandlebars} This chainable object
+	* @returns {SpreadsheetTemplater} This chainable object
 	*/
 	this.data = data => this.set('data', data);
 	// }}}
@@ -48,7 +48,7 @@ function SpreadsheetHandlebars(options) {
 
 	/**
 	* Read the template file specified in settings.templatePath into memory
-	* @returns {SpreadsheetHandlebars} This chainable object
+	* @returns {SpreadsheetTemplater} This chainable object
 	*/
 	this.readTemplate = ()=> {
 		this.workbook = xlsx.readFile(this.settings.template.path);
@@ -56,11 +56,11 @@ function SpreadsheetHandlebars(options) {
 	};
 	// }}}
 
-	// applyTemplate {{{
+	// apply {{{
 	/**
 	* Apply the given data to the template
 	* @param {Object} [data] Optional data to set (overriding options.data)
-	* @returns {SpreadsheetHandlebars} This chainable object
+	* @returns {SpreadsheetTemplater} This chainable object
 	*/
 	this.apply = data => {
 		if (data) this.set('data', data);
@@ -93,17 +93,24 @@ function SpreadsheetHandlebars(options) {
 	};
 	// }}}
 
-	// write {{{
+	// Outputs: write, buffer {{{
 	/**
 	* Write the template file back to disk
 	* @param {string} outputFile The output filename to use
-	* @returns {SpreadsheetHandlebars} This chainable object
+	* @returns {SpreadsheetTemplater} This chainable object
 	*/
 	this.write = outputFile => {
 		if (!this.workbook) throw 'No workbook loaded, use readTemplate() first';
 		xlsx.writeFile(this.workbook, outputFile);
 		return this;
 	};
+
+
+	/**
+	* Convenience function to return an Express compatible buffer
+	* @param {string} [bookType='xlsx'] The output format to use see https://docs.sheetjs.com/#supported-output-formats for the full list
+	*/
+	this.buffer = bookType => xlsx.write(this.workbook, {type: 'buffer', bookType: bookType || 'xlsx'});
 	// }}}
 
 	// Constructor {{{
@@ -118,6 +125,6 @@ function SpreadsheetHandlebars(options) {
 	return this;
 }
 
-util.inherits(SpreadsheetHandlebars, events.EventEmitter);
+util.inherits(SpreadsheetTemplater, events.EventEmitter);
 
-module.exports = SpreadsheetHandlebars;
+module.exports = SpreadsheetTemplater;
