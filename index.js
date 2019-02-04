@@ -43,7 +43,7 @@ function SpreadsheetTemplater(options) {
 	this.data = data => this.set('data', data);
 	// }}}
 
-	// readTemplate {{{
+	// read {{{
 	/**
 	* The in-memory XLSX workbook
 	* @var {xlsx.workbook}
@@ -53,9 +53,11 @@ function SpreadsheetTemplater(options) {
 
 	/**
 	* Read the template file specified in settings.templatePath into memory
+	* @param {string} [path] Optional path to read, if specified settings.template.path is set, if unspecified the former is used
 	* @returns {SpreadsheetTemplater} This chainable object
 	*/
-	this.readTemplate = ()=> {
+	this.read = path => {
+		if (path) this.set('template.path', path);
 		this.workbook = xlsx.readFile(this.settings.template.path);
 		return this;
 	};
@@ -174,7 +176,7 @@ function SpreadsheetTemplater(options) {
 	* @returns {SpreadsheetTemplater} This chainable object
 	*/
 	this.write = outputFile => {
-		if (!this.workbook) throw 'No workbook loaded, use readTemplate() first';
+		if (!this.workbook) throw 'No workbook loaded, use read() first';
 		xlsx.writeFile(this.workbook, outputFile);
 		return this;
 	};
@@ -189,8 +191,7 @@ function SpreadsheetTemplater(options) {
 
 	// Constructor {{{
 	if (_.isString(options)) {
-		this.set('template.path', options);
-		this.readTemplate();
+		this.read(options);
 	} else if (_.isObject(options)) {
 		this.set(options);
 	}

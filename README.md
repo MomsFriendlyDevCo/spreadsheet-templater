@@ -68,8 +68,8 @@ Set a single or multiple options (if key is an object).
 Lodash array and dotted notation is supported for the key.
 
 
-readTemplate()
---------------
+read([path])
+------------
 Parse the input template file.
 This function is automatically called if constructor is given a filename when initialized.
 

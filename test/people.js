@@ -11,7 +11,8 @@ describe('Template a speadsheet using people data', ()=> {
 	});
 
 	it('apply the template for a single user', ()=> {
-		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
+		var result = new SpreadsheetTemplater()
+			.read(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
 			.json()
