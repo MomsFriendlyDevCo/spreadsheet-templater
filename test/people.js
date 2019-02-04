@@ -1,6 +1,6 @@
 var expect = require('chai').expect;
 var faker = require('faker');
-var ssHandlebars = require('..');
+var SpreadsheetHandlebars = require('..');
 
 describe('Template a speadsheet using people data', ()=> {
 
@@ -10,8 +10,7 @@ describe('Template a speadsheet using people data', ()=> {
 	});
 
 	it('apply the template using the data set', ()=> {
-		var result = new ssHandlebars(`${__dirname}/data/people.xlsx`)
-			.readTemplate()
+		var result = new SpreadsheetHandlebars(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
 			.json()

@@ -5,6 +5,16 @@ Spreadsheet-Handlebars
 This plugin allows a spreadsheet to use handlebars notation to replace cell contents which enables an input spreadsheet to act as a template for incomming data.
 
 
+```javascript
+var SpreadsheetHandlebars = require('@momsfriendlydevco/spreadsheet-handlebars');
+
+new SpreadsheetHandlebars('input.xlsx')
+	.data({...})
+	.apply()
+	.write('output.xlsx')
+```
+
+
 API
 ===
 The module exposes a single object.
