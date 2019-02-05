@@ -1,7 +1,9 @@
 var _ = require('lodash');
 var expect = require('chai').expect;
 var faker = require('faker');
+var mlog = require('mocha-logger');
 var SpreadsheetTemplater = require('..');
+var temp = require('temp');
 
 describe('Template a speadsheet using people data', ()=> {
 
@@ -26,7 +28,7 @@ describe('Template a speadsheet using people data', ()=> {
 		]);
 	});
 
-	it('apply the template for multiple users', ()=> { // NOT YET SUPPORTED
+	it('apply the template for multiple users', ()=> {
 		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
 			.data({people: data})
 			.apply()
@@ -36,6 +38,17 @@ describe('Template a speadsheet using people data', ()=> {
 			['Name', 'Email', 'Phone', 'Address'],
 			...data.map(p => [p.name, p.email, p.phone, `${p.address.street}, ${p.address.city}, ${p.address.zipcode}`]),
 		]);
+	});
+
+	it.only('dump the templated output to disk', ()=> {
+		var outputPath = temp.path({suffix: '.xlsx'});
+		var result = new SpreadsheetTemplater()
+			.read(`${__dirname}/data/people.xlsx`)
+			.data({people: data})
+			.apply()
+			.write(outputPath);
+
+		mlog.log('saved file to', outputPath);
 	});
 
 });
