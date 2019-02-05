@@ -1,7 +1,5 @@
 var _ = require('lodash');
-var events = require('events');
-var util = require('util');
-var xlsx = require('xlsx');
+var xlsx = require('xlsx-populate');
 
 function SpreadsheetTemplater(options) {
 	// Options {{{
@@ -52,12 +50,13 @@ function SpreadsheetTemplater(options) {
 	/**
 	* Read the template file specified in settings.templatePath into memory
 	* @param {string} [path] Optional path to read, if specified settings.template.path is set, if unspecified the former is used
-	* @returns {SpreadsheetTemplater} This chainable object
+	* @returns {Promise} Will resolve with this object when completed
 	*/
 	this.read = path => {
 		if (path) this.set('template.path', path);
-		this.workbook = xlsx.readFile(this.settings.template.path);
-		return this;
+		return xlsx.fromFileAsync(this.settings.template.path)
+			.then(workbook => this.workbook = workbook)
+			.then(()=> this)
 	};
 	// }}}
 
@@ -70,51 +69,39 @@ function SpreadsheetTemplater(options) {
 	this.apply = data => {
 		if (data) this.set('data', data);
 
-		if (!this.workbook) throw 'No workbook loaded, use readTemplate() first';
+		if (!this.workbook) throw 'No workbook loaded, use read() first';
 
 		var repeaters = []; // Repeater replacements we need to make - must be made in reverse order due to the fact we are splicing into an array
 
-		_.forEach(this.workbook.Sheets, (sheet, sheetKey) => {
-			_.forEach(sheet, (cell, cellKey) => {
-				if (cellKey.startsWith('!') || cell.ignore) return; // Ignore meta-cells or cells we have processed elsewhere
+		this.workbook.sheets().forEach(sheet => {
+			var range = sheet.usedRange();
+			var endCell = range.endCell();
+			range.forEach(cell => {
+				if (cell.ssTemplaterIgnore) return; // Cell marked as ignored
 
 				// Repeaters {{{
 				var repeatMatch;
-				if (repeatMatch = this.settings.re.repeatStart.exec(cell.v)) {
+				if (repeatMatch = this.settings.re.repeatStart.exec(cell.value())) {
 					// Read horizontally until we hit the repeaterEnd
 					var repeater = {
 						sheet,
 						dataSource: repeatMatch[1],
-						start: xlsx.utils.decode_cell(cellKey),
+						col: cell.columnNumber(),
+						row: cell.rowNumber(),
+						range: sheet.range(cell.rowNumber(), cell.columnNumber(), cell.rowNumber(), endCell.columnNumber()),
 					};
 
-					repeater.items = _.chain(sheet)
-						.pickBy((cell, cellKey) => {
-							var cellPos = xlsx.utils.decode_cell(cellKey);
-							if (cellPos.r != repeater.start.r) return false; // Not on the same row
-							if (cellPos.c < repeater.start.c) return false; // Occurs before the starting cell
-							return true;
-						})
-						.forEach((cell, cellKey) => cell.ignore = true)
-						.map((cell, cellKey) => ({
-							position: xlsx.utils.decode_cell(cellKey),
-							...cell,
-						}))
-						.sortBy('position.c')
-						.reduce((t, cell) => { // Stop reading horizontally when we hit the ending tag
-							if (t.ended) {
-								// Do nothing
-							} else if (this.settings.re.repeatEnd.test(cell.v)) {
-								t.cells.push(cell); // Append this last cell to the iterables
-								t.ended = true; // ... and also end reading
-							} else {
-								t.cells.push(cell); // Append this cell to the items we iterate over
-							}
-							return t;
-						}, {ended: false, cells: []})
-						.get('cells')
-						.value();
+					// Move ending of range inwards to closing repeater marker
+					var closingCell;
+					repeater.range.forEach(cell => {
+						if (!closingCell && this.settings.re.repeatEnd.test(cell.value())) closingCell = cell;
+					});
+					if (closingCell) repeater.range = sheet.range(cell.rowNumber(), cell.columnNumber(), cell.rowNumber(), closingCell.columnNumber());
 
+					// Mark cells as ignored so the simple expression replacement doesn't fire
+					range.forEach(cell => cell.ssTemplaterIgnore = true);
+
+					// Add it to the start of the repeater array (we need to action these upside down when appending to an array)
 					repeaters.unshift(repeater);
 
 					return; // Don't process this cell any further
@@ -122,7 +109,7 @@ function SpreadsheetTemplater(options) {
 				// }}}
 
 				// Simple expressions - e.g. `{{foo.bar.baz}}` {{{
-				cell.v = cell.v.replace(this.settings.re.expression, (match, expression) => {
+				cell.find(this.settings.re.expression, (match, expression) => {
 					cell.w = undefined;
 					return _.get(this.settings.data, expression);
 				});
@@ -144,14 +131,20 @@ function SpreadsheetTemplater(options) {
 					}
 				}
 
-				data = data.map(dataItem => repeater.items.map(item =>
-					item.v
+				// Calculate the contents of the range we are replacing
+				repeater.rangeTemplate = repeater.range.map(cell => cell.value())[0];
+
+				// Grow repeater.range to have enough space for all the data rows
+				repeater.range = repeater.sheet.range(repeater.range.startCell().rowNumber(), repeater.range.startCell().columnNumber(), repeater.range.endCell().rowNumber() + data.length - 1, repeater.range.endCell().columnNumber());
+				repeater.range.value(cell => {
+					var rowOffset = cell.rowNumber() - repeater.range.startCell().rowNumber();
+					var colOffset = cell.columnNumber() - repeater.range.startCell().columnNumber();
+
+					return repeater.rangeTemplate[colOffset]
 						.replace(this.settings.re.repeatStart, '')
 						.replace(this.settings.re.repeatEnd, '')
-						.replace(this.settings.re.expression, (match, expression) => _.get(dataItem, expression))
-				));
-
-				xlsx.utils.sheet_add_aoa(repeater.sheet, data, {origin: repeater.start});
+						.replace(this.settings.re.expression, (match, expression) => _.get(data, rowOffset + '.' + expression))
+				});
 			});
 		}
 
@@ -163,10 +156,18 @@ function SpreadsheetTemplater(options) {
 	/**
 	* Convenience function to return the workbook as a JSON object
 	* This will return an object with each key as the sheet ID and a 2D array of cells
+	* NOTE: This function automatically prunes undefined values from the end of row and cell set
 	* @returns {Object} The current workbook as a JSON object
 	*/
 	this.json = ()=> {
-		return _.mapValues(this.workbook.Sheets, (sheet, sheetKey) => xlsx.utils.sheet_to_json(sheet, {header: 1}))
+		return _(this.workbook.sheets())
+			.mapKeys(sheet => sheet.name())
+			.mapValues(sheet =>
+				sheet.usedRange().value().map(row =>
+					_.dropRightWhile(row, y => !y)
+				)
+			)
+			.value()
 	};
 	// }}}
 
@@ -174,25 +175,28 @@ function SpreadsheetTemplater(options) {
 	/**
 	* Write the template file back to disk
 	* @param {string} outputFile The output filename to use
-	* @returns {SpreadsheetTemplater} This chainable object
+	* @returns {Promise} A promise which will resolve with this instance
 	*/
 	this.write = outputFile => {
 		if (!this.workbook) throw 'No workbook loaded, use read() first';
-		xlsx.writeFile(this.workbook, outputFile);
-		return this;
+		return this.workbook.toFileAsync(outputFile)
+			.then(()=> this)
 	};
 
 
 	/**
 	* Convenience function to return an Express compatible buffer
-	* @param {string} [bookType='xlsx'] The output format to use see https://docs.sheetjs.com/#supported-output-formats for the full list
+	* @returns {Promise} A promise which will resolve with the output buffer contents
 	*/
-	this.buffer = bookType => xlsx.write(this.workbook, {type: 'buffer', bookType: bookType || 'xlsx'});
+	this.buffer = ()=> {
+		if (!this.workbook) throw 'No workbook loaded, use read() first';
+		return this.workbook.outputAsync('buffer');
+	};
 	// }}}
 
 	// Constructor {{{
 	if (_.isString(options)) {
-		this.read(options);
+		this.set('template.path', options);
 	} else if (_.isObject(options)) {
 		this.set(options);
 	}
@@ -200,7 +204,5 @@ function SpreadsheetTemplater(options) {
 
 	return this;
 }
-
-util.inherits(SpreadsheetTemplater, events.EventEmitter);
 
 module.exports = SpreadsheetTemplater;

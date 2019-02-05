@@ -17,6 +17,15 @@ new SpreadsheetTemplater('input.xlsx')
 See the test directory for some example spreadsheets.
 
 
+Limitations
+-----------
+There are a few restrictions with this module, mainly due to time and technical limitations:
+
+* Nested `{{#each}}` + `{{/each}}` statements are not supported
+* Due to no support for dynamic row adding, at the time of writing, in the upstream [xlsx-populate](https://github.com/dtjohnson/xlsx-populate) library this module will overwrite all rows below the `{{each}}` blocks with however many rows of data need placing - the spreadsheet contents *below* the `{{each}}` blocks will not be moved down
+
+
+
 Markup
 ======
 This module reads all cells in all sheets and applies simple substitutions based on a Handlebars like template based on an input data set.
@@ -62,9 +71,9 @@ This module supports the following options:
 | `data`                  | Object   | `{}`                       | The data object used when marking up the template output                        |
 
 
-Constructor(options | filename)
--------------------------------
-Setup the object either with an options object or a template filename to use.
+Constructor([options])
+----------------------
+Setup the initial object with options.
 
 
 set(key, [val])

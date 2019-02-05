@@ -12,9 +12,27 @@ describe('Template a speadsheet using people data', ()=> {
 		data = Array.from(new Array(10), ()=> faker.helpers.userCard());
 	});
 
-	it('apply the template for a single user', ()=> {
-		var result = new SpreadsheetTemplater()
-			.read(`${__dirname}/data/people.xlsx`)
+	it('should read and output a file without changes', async ()=> {
+		var template = await new SpreadsheetTemplater().read(`${__dirname}/data/people.xlsx`);
+		var result = template.json();
+
+		expect(result.Person).to.be.deep.equal([
+			['Example Person'],
+			['Name', '{{people.0.name}}'],
+			['Email', '{{people.0.email}}'],
+			['Address', '{{people.0.address.street}}, {{people.0.address.city}}, {{people.0.address.zipcode}}'],
+			['Phone', '{{people.0.phone}}'],
+		]);
+
+		expect(result.People).to.be.deep.equal([
+			['Name', 'Email', 'Phone', 'Address'],
+			['{{#each people}}{{name}}', '{{email}}', '{{phone}}', '{{address.street}}, {{address.city}}, {{address.zipcode}}{{/each}}'],
+		]);
+	});
+
+	it('apply the template for a single user', async ()=> {
+		var template = await new SpreadsheetTemplater().read(`${__dirname}/data/people.xlsx`);
+		var result = template
 			.data({people: data})
 			.apply()
 			.json()
@@ -28,8 +46,10 @@ describe('Template a speadsheet using people data', ()=> {
 		]);
 	});
 
-	it('apply the template for multiple users', ()=> {
-		var result = new SpreadsheetTemplater(`${__dirname}/data/people.xlsx`)
+	it('apply the template for multiple users', async ()=> {
+		var template = await new SpreadsheetTemplater().read(`${__dirname}/data/people.xlsx`);
+
+		var result = template
 			.data({people: data})
 			.apply()
 			.json()
@@ -40,10 +60,11 @@ describe('Template a speadsheet using people data', ()=> {
 		]);
 	});
 
-	it.only('dump the templated output to disk', ()=> {
+	it('dump the templated output to disk', async ()=> {
 		var outputPath = temp.path({suffix: '.xlsx'});
-		var result = new SpreadsheetTemplater()
-			.read(`${__dirname}/data/people.xlsx`)
+		var template = await new SpreadsheetTemplater().read(`${__dirname}/data/people.xlsx`);
+
+		await template
 			.data({people: data})
 			.apply()
 			.write(outputPath);

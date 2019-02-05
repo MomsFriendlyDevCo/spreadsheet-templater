@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "lodash": "^4.17.11",
-    "xlsx": "^0.14.1"
+    "xlsx-populate": "^1.19.0"
   }
 }
