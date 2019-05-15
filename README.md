@@ -6,7 +6,7 @@ This plugin allows a spreadsheet to use handlebars-like notation to replace cell
 
 
 ```javascript
-var SpreadsheetTemplater = require('@momsfriendlydevco/spreadsheet-templaters');
+var SpreadsheetTemplater = require('@momsfriendlydevco/spreadsheet-templater');
 
 new SpreadsheetTemplater('input.xlsx')
 	.data({...})
