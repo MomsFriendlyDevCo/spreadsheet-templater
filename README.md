@@ -69,6 +69,7 @@ This module supports the following options:
 | `template`              | Object   |                            | Options to control templates                                                    |
 | `template.path`         | String   |                            | The source file to process the template from                                    |
 | `data`                  | Object   | `{}`                       | The data object used when marking up the template output                        |
+| `defaultValue`          | Any      | `''`                       | The value used when no corresponding simple dotted path can be located          |
 
 
 Constructor([options])

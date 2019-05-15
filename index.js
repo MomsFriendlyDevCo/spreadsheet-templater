@@ -14,6 +14,7 @@ function SpreadsheetTemplater(options) {
 			path: undefined,
 		},
 		data: {},
+		defaultValue: '',
 	};
 
 	/**
@@ -111,7 +112,7 @@ function SpreadsheetTemplater(options) {
 				// Simple expressions - e.g. `{{foo.bar.baz}}` {{{
 				cell.find(this.settings.re.expression, (match, expression) => {
 					cell.w = undefined;
-					return _.get(this.settings.data, expression);
+					return _.get(this.settings.data, expression, this.settings.defaultValue);
 				});
 				// }}}
 			});
@@ -120,7 +121,7 @@ function SpreadsheetTemplater(options) {
 		if (repeaters.length) {
 			repeaters.forEach(repeater => {
 				var data =
-					repeater.dataSource ? _.get(this.settings.data, repeater.dataSource) // Use a dotted path as the source
+					repeater.dataSource ? _.get(this.settings.data, repeater.dataSource, this.settings.defaultValue) // Use a dotted path as the source
 					: this.settings.data // Probably in format `{{#each}}` (use global object)
 
 				if (!_.isArray(data)) {
@@ -143,7 +144,7 @@ function SpreadsheetTemplater(options) {
 					return repeater.rangeTemplate[colOffset]
 						.replace(this.settings.re.repeatStart, '')
 						.replace(this.settings.re.repeatEnd, '')
-						.replace(this.settings.re.expression, (match, expression) => _.get(data, rowOffset + '.' + expression))
+						.replace(this.settings.re.expression, (match, expression) => _.get(data, rowOffset + '.' + expression, this.settings.defaultValue))
 				});
 			});
 		}
