@@ -25,6 +25,10 @@ There are a few restrictions with this module, mainly due to time and technical 
 * Due to no support for dynamic row adding, at the time of writing, in the upstream [xlsx-populate](https://github.com/dtjohnson/xlsx-populate) library this module will overwrite all rows below the `{{each}}` blocks with however many rows of data need placing - the spreadsheet contents *below* the `{{each}}` blocks will not be moved down
 
 
+Debugging
+---------
+This module uses the [Debug NPM](https://github.com/visionmedia/debug#readme). To enable simply set the `DEBUG` environment variable to include `spreadsheet-templater`
+
 
 Markup
 ======

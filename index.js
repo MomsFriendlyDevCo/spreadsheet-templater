@@ -1,13 +1,24 @@
 var _ = require('lodash');
+var debug = require('debug')('spreadsheet-templater');
+var templator = require('@momsfriendlydevco/template');
 var xlsx = require('xlsx-populate');
 
 function SpreadsheetTemplater(options) {
 	// Options {{{
 	this.settings = {
 		re: {
-			expression: /{{(.+?)}}/g,
 			repeatStart: /{{#?\s*each\s*(.*?)}}/g,
 			repeatEnd: /{{\/each.*?}}/,
+		},
+		templateDetect: v => v && /{{.+?}}/.test(v) || /\${.+?}/.test(v),
+		templatePreProcess: [
+			v => /{{(?:\s*-)?\s*[a-z0-9\.\[\]]+?\s*}}/i.test(v) // Replace possibly weird dotted notation path containing numbers with proper index addresses
+				? v.replace(/\.([0-9]+)/g, '[$1]')
+				: v,
+		],
+		templateSettings: {
+			handlebars: true,
+			globals: {Date, Math, Number},
 		},
 		repeaterSilentOnError: false,
 		template: {
@@ -15,7 +26,10 @@ function SpreadsheetTemplater(options) {
 		},
 		data: {},
 		defaultValue: '',
+		dateDetect: v => /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{1,2} [0-9]{4}/.test(v), // FIXME: Crappy date string detection
+		dateFormat: 'dd/mm/yyyy',
 	};
+
 
 	/**
 	* Set a single, or multiple options
@@ -74,6 +88,40 @@ function SpreadsheetTemplater(options) {
 
 		var repeaters = []; // Repeater replacements we need to make - must be made in reverse order due to the fact we are splicing into an array
 
+
+		/**
+		* Scan a cell and optionally apply templates (if any are detected)
+		* @param {Cell} cell The cell to examine
+		* @param {Object} data The data context to use
+		*/
+		var scanCell = (cell, data) => {
+			var cellVal = cell.value();
+			if (this.settings.templateDetect(cellVal)) {
+				var cellTemplate = this.settings.templatePreProcess.reduce((v, pp) => pp(v), cellVal); // Run template though all templatePreProcess steps
+				debug('TEMPLATE', cellTemplate);
+				var newVal = templator(cellTemplate, data, this.settings.templateSettings);
+
+				if (!newVal || _.isEmpty(newVal)) {
+					debug(' ->Empty');
+					cell.value('');
+				} else if (isFinite(newVal)) {
+					debug(' ->ParseFloat', newVal);
+					newVal = parseFloat(newVal);
+					debug(' ->Num=', newVal);
+					cell.value(isNaN(newVal) ? 'Err:NaN' : newVal);
+				} else if (this.settings.dateDetect(newVal)) {
+					newVal = new Date(newVal);
+					debug(' ->Date=', newVal);
+					cell.value(newVal).style('numberFormat', this.settings.dateFormat);
+				} else {
+					debug(' ->RAW=', newVal);
+					cell.value(newVal);
+				}
+			}
+			// }}}
+		};
+
+
 		this.workbook.sheets().forEach(sheet => {
 			var range = sheet.usedRange();
 			var endCell = range.endCell();
@@ -109,15 +157,12 @@ function SpreadsheetTemplater(options) {
 				}
 				// }}}
 
-				// Simple expressions - e.g. `{{foo.bar.baz}}` {{{
-				cell.find(this.settings.re.expression, (match, expression) => {
-					cell.w = undefined;
-					return _.get(this.settings.data, expression, this.settings.defaultValue);
-				});
-				// }}}
+				// Scan cells outside of repeater
+				if (!cell.ssTemplaterIgnore) scanCell(cell, this.settings.data);
 			});
 		});
 
+		// Apply all repeaters
 		if (repeaters.length) {
 			repeaters.forEach(repeater => {
 				var data =
@@ -137,14 +182,18 @@ function SpreadsheetTemplater(options) {
 
 				// Grow repeater.range to have enough space for all the data rows
 				repeater.range = repeater.sheet.range(repeater.range.startCell().rowNumber(), repeater.range.startCell().columnNumber(), repeater.range.endCell().rowNumber() + data.length - 1, repeater.range.endCell().columnNumber());
-				repeater.range.value(cell => {
+				repeater.range.forEach(cell => {
 					var rowOffset = cell.rowNumber() - repeater.range.startCell().rowNumber();
 					var colOffset = cell.columnNumber() - repeater.range.startCell().columnNumber();
 
-					return repeater.rangeTemplate[colOffset]
-						.replace(this.settings.re.repeatStart, '')
-						.replace(this.settings.re.repeatEnd, '')
-						.replace(this.settings.re.expression, (match, expression) => _.get(data, rowOffset + '.' + expression, this.settings.defaultValue))
+					// Remove repeater markers
+					cell.value(
+						repeater.rangeTemplate[colOffset]
+							.replace(this.settings.re.repeatStart, '')
+							.replace(this.settings.re.repeatEnd, '')
+					);
+
+					scanCell(cell, data[rowOffset]);
 				});
 			});
 		}
