@@ -11,12 +11,9 @@ function SpreadsheetTemplater(options) {
 			repeatEnd: /{{\/each.*?}}/,
 		},
 		templateDetect: v => v && /{{.+?}}/.test(v) || /\${.+?}/.test(v),
-		templatePreProcess: [
-			v => /{{(?:\s*-)?\s*[a-z0-9\.\[\]]+?\s*}}/i.test(v) // Replace possibly weird dotted notation path containing numbers with proper index addresses
-				? v.replace(/\.([0-9]+)/g, '[$1]')
-				: v,
-		],
+		templatePreProcess: [],
 		templateSettings: {
+			dotted: true,
 			handlebars: true,
 			globals: {Date, Math, Number},
 		},

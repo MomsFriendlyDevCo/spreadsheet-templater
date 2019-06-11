@@ -74,6 +74,11 @@ This module supports the following options:
 | `template.path`         | String   |                            | The source file to process the template from                                    |
 | `data`                  | Object   | `{}`                       | The data object used when marking up the template output                        |
 | `defaultValue`          | Any      | `''`                       | The value used when no corresponding simple dotted path can be located          |
+| `templateDetect`        | Function | See code                   | How to determine if a cell needs to be templated                                |
+| `templatePreProcess`    | Array    | `[]`                       | Array of functions that can mutate a cell template before processing            |
+| `templateSettings`      | Object   | See code                   | Settings passed to [the templating NPM](https://github.com/MomsFriendlyDevCo/template) |
+| `dateDetect`            | RegEx    | See code                   | RegEx for detecting date output before formatting                               |
+| `dateFormat`            | String   | `"dd/mm/yyyy"`             | The date format to use when `dateDetect` succeeds                               |
 
 
 Constructor([options])
