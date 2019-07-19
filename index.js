@@ -101,6 +101,12 @@ function SpreadsheetTemplater(options) {
 				if (!newVal || _.isEmpty(newVal)) {
 					debug(' ->Empty');
 					cell.value('');
+				} else if (newVal.indexOf('=') === 0) {
+					debug(' ->Formula');
+					// Replace fancy quotes
+					newVal = newVal.replace(String.fromCodePoint(8220), '"');
+					newVal = newVal.replace(String.fromCodePoint(8221), '"');
+					cell.formula(newVal);
 				} else if (isFinite(newVal)) {
 					debug(' ->ParseFloat', newVal);
 					newVal = parseFloat(newVal);
