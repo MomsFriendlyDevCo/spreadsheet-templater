@@ -96,6 +96,11 @@ function SpreadsheetTemplater(options) {
 			if (this.settings.templateDetect(cellVal)) {
 				var cellTemplate = this.settings.templatePreProcess.reduce((v, pp) => pp(v), cellVal); // Run template though all templatePreProcess steps
 				debug('TEMPLATE', cellTemplate);
+				// Replace fancy quotes
+				if (typeof cellTemplate === 'string') {
+					cellTemplate = cellTemplate.replace(new RegExp(String.fromCodePoint(8220), 'g'), '"');
+					cellTemplate = cellTemplate.replace(new RegExp(String.fromCodePoint(8221), 'g'), '"');
+				}
 				var newVal = templator(cellTemplate, data, this.settings.templateSettings);
 
 				if (!newVal || _.isEmpty(newVal)) {
@@ -103,9 +108,6 @@ function SpreadsheetTemplater(options) {
 					cell.value('');
 				} else if (newVal.indexOf('=') === 0) {
 					debug(' ->Formula');
-					// Replace fancy quotes
-					newVal = newVal.replace(String.fromCodePoint(8220), '"');
-					newVal = newVal.replace(String.fromCodePoint(8221), '"');
 					cell.formula(newVal);
 				} else if (isFinite(newVal)) {
 					debug(' ->ParseFloat', newVal);
