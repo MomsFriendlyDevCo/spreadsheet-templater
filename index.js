@@ -128,7 +128,10 @@ function SpreadsheetTemplater(options) {
 
 
 		this.workbook.sheets().forEach(sheet => {
+			if (!sheet) return;
 			var range = sheet.usedRange();
+			if (!range) return;
+
 			var endCell = range.endCell();
 			range.forEach(cell => {
 				if (cell.ssTemplaterIgnore) return; // Cell marked as ignored
