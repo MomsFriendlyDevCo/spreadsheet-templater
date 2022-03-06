@@ -8,7 +8,8 @@ This plugin allows a spreadsheet to use handlebars-like notation to replace cell
 ```javascript
 var SpreadsheetTemplater = require('@momsfriendlydevco/spreadsheet-templater');
 
-new SpreadsheetTemplater('input.xlsx')
+new SpreadsheetTemplater()
+	.read('input.xlsx')
 	.data({...})
 	.apply()
 	.write('output.xlsx')
@@ -101,6 +102,11 @@ This function is automatically called if constructor is given a filename when in
 apply([data])
 -------------
 Apply the given data (or the data specified in `options.data`) to the loaded template.
+
+
+data([data])
+-------------
+Alternate way to set template data.
 
 
 json()
