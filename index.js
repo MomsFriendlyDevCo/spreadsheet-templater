@@ -195,11 +195,12 @@ function SpreadsheetTemplater(options) {
 					var colOffset = cell.columnNumber() - repeater.range.startCell().columnNumber();
 
 					// Remove repeater markers
-					cell.value(
-						repeater.rangeTemplate[colOffset]
-							.replace(this.settings.re.repeatStart, '')
-							.replace(this.settings.re.repeatEnd, '')
-					);
+					if (repeater.rangeTemplate[colOffset])
+						cell.value(
+							repeater.rangeTemplate[colOffset]
+								.replace(this.settings.re.repeatStart, '')
+								.replace(this.settings.re.repeatEnd, '')
+						);
 
 					scanCell(cell, data[rowOffset]);
 				});
